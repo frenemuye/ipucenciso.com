@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b3d91">
+    <title>IPUC Enciso</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #0b3d91; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+        #app-frame {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        /* Pantalla de carga */
+        #loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            background: #0b3d91;
+            color: #fff;
+            z-index: 20;
+            transition: opacity .4s ease;
+        }
+        #loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 46px; height: 46px;
+            border: 4px solid rgba(255,255,255,.25);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Barra de botones de instalación */
+        #install-bar {
+            position: fixed;
+            left: calc(16px + env(safe-area-inset-left));
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            display: flex;
+            gap: 10px;
+            z-index: 30;
+        }
+        #install-bar.hidden { display: none; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 18px;
+            border: 0;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0b3d91;
+            background: #fff;
+            box-shadow: 0 6px 20px rgba(0,0,0,.3);
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,.35); }
+        .btn:active { transform: translateY(0); }
+        .btn svg { width: 18px; height: 18px; }
+        .btn-close {
+            background: rgba(0,0,0,.55);
+            color: #fff;
+            padding: 11px 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <div>Cargando IPUC Enciso…</div>
+    </div>
+
+    <iframe
+        id="app-frame"
+        src="https://script.google.com/macros/s/AKfycbxz5w3474R6X4SBADLvtCVE7J2zMQm_VuhUkJkmB91b7aGkQroBBd_8pn0YTVgz1Z9Kaw/exec?page=dashboard"
+        allow="clipboard-read; clipboard-write; geolocation; camera; microphone; fullscreen"
+        allowfullscreen
+        referrerpolicy="no-referrer-when-downgrade">
+    </iframe>
+
+    <div id="install-bar" class="hidden">
+        <button id="btn-windows" class="btn" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5zM3 12.5h7.5v7.1L3 18.5v-6zM11.5 4.2 21 3v8.5h-9.5V4.2zM11.5 12.5H21V21l-9.5-1.3v-7.2z"/></svg>
+            Instalar en Windows
+        </button>
+        <a id="btn-apk" class="btn" href="app-release.apk" download>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.2 7.6 6 5.5c-.1-.2 0-.4.2-.5.2-.1.4 0 .5.2l1.2 2.1C8.9 6.7 10.4 6.3 12 6.3s3.1.4 4.1.9l1.2-2.1c.1-.2.3-.3.5-.2.2.1.3.3.2.5l-1.2 2.1C19.1 9 20.5 11.3 20.5 14H3.5c0-2.7 1.4-5 3.7-6.4zM8.5 11.5a.9.9 0 100-1.8.9.9 0 000 1.8zm7 0a.9.9 0 100-1.8.9.9 0 000 1.8zM3.5 15h17v3.5a1.5 1.5 0 01-1.5 1.5h-.5v2.2a1 1 0 11-2 0V20h-9v2.2a1 1 0 11-2 0V20H5a1.5 1.5 0 01-1.5-1.5V15z"/></svg>
+            Instalar APK
+        </a>
+        <button id="btn-close" class="btn btn-close" type="button" title="Ocultar">✕</button>
+    </div>
+
+    <script>
+        // ---- Ocultar loader cuando el iframe termina de cargar ----
+        const frame = document.getElementById('app-frame');
+        const loader = document.getElementById('loader');
+        frame.addEventListener('load', () => loader.classList.add('hidden'));
+        // Respaldo por si el evento load no dispara (embebido cruzado)
+        setTimeout(() => loader.classList.add('hidden'), 6000);
+
+        // ---- Registro del Service Worker (necesario para instalar PWA) ----
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+
+        // ---- Botones de instalación ----
+        const bar = document.getElementById('install-bar');
+        const btnWin = document.getElementById('btn-windows');
+        const btnApk = document.getElementById('btn-apk');
+        const btnClose = document.getElementById('btn-close');
+        let deferredPrompt = null;
+
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isWindows = /Windows/i.test(navigator.userAgent);
+
+        // Mostrar/ocultar botones según la plataforma
+        btnWin.style.display = isAndroid ? 'none' : 'inline-flex';
+        btnApk.style.display = isWindows && !isAndroid ? 'none' : 'inline-flex';
+
+        function showBar() { bar.classList.remove('hidden'); }
+
+        // Captura el evento de instalación de PWA (Windows / Chrome / Edge / Android)
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showBar();
+        });
+
+        btnWin.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                bar.classList.add('hidden');
+            } else {
+                alert('Para instalar en Windows: abre el menú del navegador (⋮) y elige "Instalar IPUC Enciso" / "Instalar esta aplicación".');
+            }
+        });
+
+        // Si ya está instalada, ocultar la barra
+        window.addEventListener('appinstalled', () => bar.classList.add('hidden'));
+
+        btnClose.addEventListener('click', () => bar.classList.add('hidden'));
+
+        // Mostrar la barra siempre (aunque el navegador no dispare beforeinstallprompt,
+        // el botón APK y las instrucciones manuales siguen siendo útiles)
+        window.addEventListener('load', showBar);
+    </script>
+</body>
+</html>
