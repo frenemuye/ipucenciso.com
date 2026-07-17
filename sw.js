@@ -1,7 +1,7 @@
 // Service Worker mínimo para que la PWA sea instalable.
 // No cachea el contenido del iframe (viene de otro dominio en tiempo real).
 
-const CACHE = 'ipuc-enciso-v1';
+const CACHE = 'ipuc-enciso-v2';
 const ASSETS = [
   './',
   './index.html',

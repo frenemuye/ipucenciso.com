@@ -100,10 +100,10 @@
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5zM3 12.5h7.5v7.1L3 18.5v-6zM11.5 4.2 21 3v8.5h-9.5V4.2zM11.5 12.5H21V21l-9.5-1.3v-7.2z"/></svg>
             Instalar en Windows
         </button>
-        <a id="btn-apk" class="btn" href="app-release.apk" download>
+        <button id="btn-android" class="btn" type="button">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.2 7.6 6 5.5c-.1-.2 0-.4.2-.5.2-.1.4 0 .5.2l1.2 2.1C8.9 6.7 10.4 6.3 12 6.3s3.1.4 4.1.9l1.2-2.1c.1-.2.3-.3.5-.2.2.1.3.3.2.5l-1.2 2.1C19.1 9 20.5 11.3 20.5 14H3.5c0-2.7 1.4-5 3.7-6.4zM8.5 11.5a.9.9 0 100-1.8.9.9 0 000 1.8zm7 0a.9.9 0 100-1.8.9.9 0 000 1.8zM3.5 15h17v3.5a1.5 1.5 0 01-1.5 1.5h-.5v2.2a1 1 0 11-2 0V20h-9v2.2a1 1 0 11-2 0V20H5a1.5 1.5 0 01-1.5-1.5V15z"/></svg>
-            Instalar APK
-        </a>
+            Instalar app
+        </button>
         <button id="btn-close" class="btn btn-close" type="button" title="Ocultar">✕</button>
     </div>
 
@@ -123,44 +123,50 @@
         // ---- Botones de instalación ----
         const bar = document.getElementById('install-bar');
         const btnWin = document.getElementById('btn-windows');
-        const btnApk = document.getElementById('btn-apk');
+        const btnAndroid = document.getElementById('btn-android');
         const btnClose = document.getElementById('btn-close');
         let deferredPrompt = null;
 
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isWindows = /Windows/i.test(navigator.userAgent);
+        const ua = navigator.userAgent;
+        const isAndroid = /Android/i.test(ua);
+        const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-        // Mostrar/ocultar botones según la plataforma
+        // Mostrar el botón que corresponde a la plataforma
         btnWin.style.display = isAndroid ? 'none' : 'inline-flex';
-        btnApk.style.display = isWindows && !isAndroid ? 'none' : 'inline-flex';
+        btnAndroid.style.display = isAndroid ? 'inline-flex' : 'none';
 
         function showBar() { bar.classList.remove('hidden'); }
 
-        // Captura el evento de instalación de PWA (Windows / Chrome / Edge / Android)
+        // Captura el evento de instalación nativa (Chrome/Edge en Windows y Android)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             showBar();
         });
 
-        btnWin.addEventListener('click', async () => {
+        // Instalación automática nativa: un toque -> cuadro nativo -> instalado
+        async function instalar() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 await deferredPrompt.userChoice;
                 deferredPrompt = null;
                 bar.classList.add('hidden');
+            } else if (isIOS) {
+                alert('En iPhone/iPad: toca el botón Compartir (⬆️) y elige "Agregar a pantalla de inicio".');
             } else {
-                alert('Para instalar en Windows: abre el menú del navegador (⋮) y elige "Instalar IPUC Enciso" / "Instalar esta aplicación".');
+                alert('Abre el menú del navegador (⋮) y elige "Instalar app" / "Instalar esta aplicación".');
             }
-        });
+        }
+
+        btnWin.addEventListener('click', instalar);
+        btnAndroid.addEventListener('click', instalar);
 
         // Si ya está instalada, ocultar la barra
         window.addEventListener('appinstalled', () => bar.classList.add('hidden'));
 
         btnClose.addEventListener('click', () => bar.classList.add('hidden'));
 
-        // Mostrar la barra siempre (aunque el navegador no dispare beforeinstallprompt,
-        // el botón APK y las instrucciones manuales siguen siendo útiles)
+        // Mostrar la barra al cargar
         window.addEventListener('load', showBar);
     </script>
 </body>
