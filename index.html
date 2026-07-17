@@ -138,12 +138,19 @@
         const ua = navigator.userAgent;
         const isAndroid = /Android/i.test(ua);
         const isIOS = /iPhone|iPad|iPod/i.test(ua);
+        // ¿Ya está instalada y abierta como app? (modo standalone)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || window.navigator.standalone === true;
 
         // Mostrar el botón que corresponde a la plataforma
         btnWin.style.display = isAndroid ? 'none' : 'inline-flex';
         btnAndroid.style.display = isAndroid ? 'inline-flex' : 'none';
 
-        function showBar() { bar.classList.remove('hidden'); }
+        // No mostramos el botón si la app ya está instalada (abierta en modo app)
+        function showBar() {
+            if (isStandalone) return;
+            bar.classList.remove('hidden');
+        }
 
         // Captura el evento de instalación nativa (Chrome/Edge en Windows y Android)
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -174,8 +181,14 @@
 
         btnClose.addEventListener('click', () => bar.classList.add('hidden'));
 
-        // Mostrar la barra al cargar
-        window.addEventListener('load', showBar);
+        // El botón aparece SOLO cuando de verdad se puede instalar:
+        // - Android/Windows (Chrome/Edge): al dispararse 'beforeinstallprompt'.
+        //   Una vez instalada, ese evento ya no se dispara -> el botón no aparece.
+        // - iPhone/iPad: no existe ese evento; mostramos el botón con instrucciones,
+        //   salvo que ya esté abierta como app instalada.
+        window.addEventListener('load', () => {
+            if (isIOS && !isStandalone) showBar();
+        });
     </script>
 </body>
 </html>
